@@ -1,12 +1,6 @@
 extends Node
 
 #region Variables
-#region scene
-@export_category("Scene's background")
-@export var scene_bg_image : CompressedTexture2D
-@export var scene_bg_color : Color
-#endregion scene
-
 #region GUI
 @export_category("Text")
 @export var font : Font
@@ -33,7 +27,6 @@ extends Node
 #endregion GUI
 
 #region NodesID
-@onready var scene : Node2D = get_node("scene")
 @onready var GUI : Node2D = get_node("GUI")
 @onready var menus : Node2D = get_node("GUI/menus")
 #endregion NodesID
@@ -59,33 +52,20 @@ func _process(delta: float) -> void:
 func update() -> void:
 	update_variables()
 	update_screen_size()
-	update_scene()
 	update_GUI()
 
 func update_variables():
-	global_mouse_position = scene.get_global_mouse_position()
+	global_mouse_position = GUI.get_global_mouse_position()
 
 func update_screen_size() -> void:
 	window.size.y = window.size.x * window_ratio
 
-func update_scene() -> void:
-	#scene's scale
-	var ratio : float = float(window.size.x) / float(initial_window_size.x)
-	scene.scale = Vector2(1,1) * ratio
-	#region Background
-	var background : Node2D = scene.get_node("background")
-	#image
-	if scene_bg_image != null:
-		background.texture = scene_bg_image
-	#color
-	background.modulate = scene_bg_color
-	#scale
-	background.scale = initial_window_size
-	#position
-	background.position = initial_window_size/2
-	#endregion Backgrond
-
 func update_GUI() -> void:
+	#region GUI's scale
+	var ratio : float = float(window.size.x)/float(initial_window_size.x)
+	GUI.scale = Vector2(1,1) * ratio
+	#endregion GUI's scale
+	
 	#region Store node's ID
 	#store here all Button's ID
 	var buttons : Array = [
