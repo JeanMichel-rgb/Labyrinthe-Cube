@@ -1,0 +1,32 @@
+[gd_scene load_steps=4 format=3 uid="uid://wop1epi83rku"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_rwuwp"]
+
+[sub_resource type="SystemFont" id="SystemFont_gyhpv"]
+font_names = PackedStringArray("BN Machine", "Year supply of fairy cakes", "Ethnocentric")
+
+[sub_resource type="QuadMesh" id="QuadMesh_ydgsu"]
+
+[node name="main" type="Node"]
+script = ExtResource("1_rwuwp")
+font = SubResource("SystemFont_gyhpv")
+font_color = Color(0, 0.356863, 1, 1)
+disabled_font_alpha = 0.75
+font_selected_color = Color(0, 1, 1, 1)
+selection_color = Color(0, 0, 0.776471, 1)
+font_outline_color = Color(1, 1, 0, 1)
+font_outline_size = 5
+GUI_bg_color = Color(0, 1, 1, 1)
+GUI_outline_color = Color(0.813927, 0.813927, 0, 1)
+GUI_disabled_alpha = 0.75
+GUI_outline_size = 5
+GUI_corner_radius = Vector4i(15, 5, 5, 10)
+
+[node name="scene" type="Node2D" parent="."]
+
+[node name="background" type="MeshInstance2D" parent="scene"]
+mesh = SubResource("QuadMesh_ydgsu")
+
+[node name="GUI" type="Node2D" parent="."]
+
+[node name="menus" type="Node2D" parent="GUI"]
