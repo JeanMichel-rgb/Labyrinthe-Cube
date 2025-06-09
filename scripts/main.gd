@@ -9,7 +9,6 @@ extends Node
 
 #region maze
 @export_category("Maze")
-@export var maze_size : int
 @export var top_cube_color : Color
 @export var down_cube_color : Color
 @export var right_cube_color : Color
@@ -49,6 +48,11 @@ extends Node
 @onready var world : Node3D = get_node("world")
 @onready var maze : Node3D = world.get_node("maze")
 @onready var player : CharacterBody3D = world.get_node("player")
+@onready var waiting_screen : Node2D = GUI.get_node("waiting_screen")
+@onready var plan_XY : MeshInstance2D = GUI.get_node("position_preview/plans/XY")
+@onready var plan_XZ : MeshInstance2D = GUI.get_node("position_preview/plans/XZ")
+@onready var plan_YZ : MeshInstance2D = GUI.get_node("position_preview/plans/YZ")
+@onready var settings_menu : Node2D = menus.get_node("settings")
 #endregion NodesID
 
 #region Window
@@ -58,16 +62,31 @@ extends Node
 #endregion Window
 
 #region miscellaneous
+var maze_complexity : int
+var maze_size : int
 var global_mouse_position : Vector2 = Vector2.ZERO
+var player_position : Vector3i = Vector3i.ZERO
+var is_position_visible : bool = false
+var settings_menu_open : bool = false
 #endregion miscellaneous
 #endregion Variables
 
 func _ready() -> void:
-	create_maze(maze_size,0)
-	player.position = Vector3(1,1,1)
+	update()
+	new_game()
+	#connect signals
+	GUI.get_node("position_preview/is_position_visible").connect("pressed", change_position_visibility)
+	settings_menu.get_node("open").connect("pressed", open_close_settings)
+	settings_menu.get_node("menu/new_maze").connect("pressed", new_game)
+	#set up visibility
+	settings_menu.get_node("menu").hide()
 
 func _process(delta: float) -> void:
-	update()
+	await update()
+	await vizualize_player_position()
+	if is_player_outside():
+		player.position = Vector3(1,1,1)
+		new_game()
 
 #region Update
 func update() -> void:
@@ -79,6 +98,19 @@ func update_variables():
 	global_mouse_position = GUI.get_global_mouse_position()
 	player.mouse_sensibility = mouse_sensibility
 	player.SPEED = player_speed
+	player_position = Vector3i(Vector3(1,1,1)*.5 + player.position)
+
+func vizualize_player_position():
+	plan_XY.visible = GUI.get_node("position_preview/is_position_visible").button_pressed
+	plan_XZ.visible = is_position_visible
+	plan_YZ.visible = is_position_visible
+	var player_visualization_position : Vector3 = Vector3(player_position)/float(maze_size-1)
+	#XY
+	plan_XY.get_node("player").position = (Vector2(1,-1) * -100) + (Vector2(player_visualization_position.x, -player_visualization_position.y) * 200)
+	#XZ
+	plan_XZ.get_node("player").position = (Vector2(1,-1) * -100) + (Vector2(player_visualization_position.x, -player_visualization_position.z) * 200)
+	#YZ
+	plan_YZ.get_node("player").position = (Vector2(1,-1) * -100) + (Vector2(player_visualization_position.y, -player_visualization_position.z) * 200)
 
 func update_screen_size() -> void:
 	window.size.y = window.size.x * window_ratio
@@ -92,7 +124,10 @@ func update_GUI() -> void:
 	#region Store node's ID
 	#store here all Button's ID
 	var buttons : Array = [
-		
+		settings_menu.get_node("menu/new_maze"),
+	]
+	var flat_buttons : Array = [
+		settings_menu.get_node("open"),
 	]
 	#store here all OptionButton's ID
 	var option_buttons : Array = [
@@ -100,7 +135,7 @@ func update_GUI() -> void:
 	]
 	#store here all CheckButton's ID
 	var check_buttons : Array = [
-		
+		GUI.get_node("position_preview/is_position_visible"),
 	]
 	#store here all CheckBox's ID
 	var check_boxs : Array = [
@@ -112,11 +147,27 @@ func update_GUI() -> void:
 		]
 	#store here all LineEdit's ID
 	var line_edits : Array = [
-		
+		settings_menu.get_node("menu/store_informations/maze_side"),
+		settings_menu.get_node("menu/store_informations/maze_complexity"),
 	]
 	#store here all Label's ID
 	var labels : Array = [
+		plan_XY.get_node("X"),
+		plan_XY.get_node("Y"),
+		plan_XY.get_node("0"),
 		
+		plan_XZ.get_node("X"),
+		plan_XZ.get_node("Z"),
+		plan_XZ.get_node("0"),
+		
+		plan_YZ.get_node("Y"),
+		plan_YZ.get_node("Z"),
+		plan_YZ.get_node("0"),
+		
+		waiting_screen.get_node("background/Label"),
+		
+		settings_menu.get_node("menu/texts/maze_side"),
+		settings_menu.get_node("menu/texts/maze_complexity"),
 	]
 	#endregion Store node's ID
 	
@@ -227,7 +278,7 @@ func update_GUI() -> void:
 	var StyleBoxFlat_pressed : StyleBoxFlat = StyleBoxFlat_hover.duplicate()
 	#endregion Adapt to multiples StyleBoxFlat
 	
-	#region Add backgrounds to control_node_theme
+	#region Add StyleBoxFlat to control_node_theme
 	for theme_type in ["Button", "0ptionButton", "CheckButton", "CheckBox", "TextEdit", "LineEdit"]:
 		control_node_theme.set_stylebox("disabled", theme_type, StyleBoxFlat_disabled)
 		control_node_theme.set_stylebox("normal", theme_type, StyleBoxFlat_normal)
@@ -235,14 +286,47 @@ func update_GUI() -> void:
 		control_node_theme.set_stylebox("hover", theme_type, StyleBoxFlat_hover)
 		control_node_theme.set_stylebox("hover_pressed", theme_type, StyleBoxFlat_hover_pressed)
 		control_node_theme.set_stylebox("pressed", theme_type, StyleBoxFlat_pressed)
-	#endregion Add backgrounds to control_node_theme
+	#endregion Add StyleBoxFlat to control_node_theme
 	#endregion Background
 	#endregion Create control node's theme
+	
+	var flat_button_theme : Theme = Theme.new()
+	
+	#region Text
+	flat_button_theme.set_font("font", "Button", font)
+	flat_button_theme.set_color("font_color", "Button", font_color)
+	flat_button_theme.set_color("font_disabled_color", "Button", disabled_font_color)
+	flat_button_theme.set_color("font_focus_color", "Button", font_color)
+	flat_button_theme.set_color("font_hover_color", "Button", font_color*1.5)
+	flat_button_theme.set_color("font_pressed_color", "Button", font_selected_color)
+	flat_button_theme.set_color("font_outline_color", "Button", font_outline_color)
+	flat_button_theme.set_constant("outline_size", "Button", font_outline_size)
+	#endregion Text
+	
+	#region Background
+	#region Create the StyleBoxFlat
+	_StyleBoxFlat = StyleBoxFlat.new()
+	_StyleBoxFlat.bg_color = Color(0,0,0,0)
+	#endregion Create the StyleBoxFlat
+	
+	#region Add StyleBoxFlat to flat_button_theme
+	flat_button_theme.set_stylebox("disabled", "Button", _StyleBoxFlat)
+	flat_button_theme.set_stylebox("normal", "Button", _StyleBoxFlat)
+	flat_button_theme.set_stylebox("focus", "Button", _StyleBoxFlat)
+	flat_button_theme.set_stylebox("hover", "Button", _StyleBoxFlat)
+	flat_button_theme.set_stylebox("hover_pressed", "Button", _StyleBoxFlat)
+	flat_button_theme.set_stylebox("pressed", "Button", _StyleBoxFlat)
+	#endregion Add StyleBoxFlat to flat_button_theme
+	#endregion Background
 	
 	#region Add theme
 	for button in buttons:
 		button.theme = control_node_theme
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	
+	for flat_button in flat_buttons:
+		flat_button.theme = flat_button_theme
+		flat_button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	
 	for option_button in option_buttons:
 		option_button.theme = control_node_theme
@@ -251,6 +335,7 @@ func update_GUI() -> void:
 	for check_button in check_buttons:
 		check_button.theme = control_node_theme
 		check_button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		check_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	
 	for check_box in check_boxs:
 		check_box.theme = control_node_theme
@@ -283,6 +368,7 @@ func update_GUI() -> void:
 	#create a dictionary with all nodes that can be focused
 	var control_nodes : Dictionary = {
 		"buttons" = buttons,
+		"flat_buttons" = flat_buttons,
 		"option_buttons" = option_buttons,
 		"check_buttons" = check_buttons,
 		"check_boxs" = check_boxs,
@@ -304,7 +390,10 @@ func update_focus(control_nodes : Dictionary) -> void:
 						node.release_focus()
 #endregion Update
 
-#region utilities
+#region Utilities
+func is_player_outside() -> bool:
+	return player_position.x >= maze_size or player_position.y >= maze_size or player_position.z >= maze_size
+
 func is_in_rectangle(position : Vector2, rectangle_UpLeft_position : Vector2, rectangle_diagonal : Vector2, rectangle_rotation : float) -> bool:
 	#recalculate the position based on rectangle's position and rotation
 	position -= rectangle_UpLeft_position
@@ -393,18 +482,9 @@ func new_cube(position : Vector3, scale : Vector3 = Vector3(1,1,1), rotation : V
 	
 	maze.add_child(cube_node)
 
-
-#complexity is the random in the maze:
-#complexity = 0 : one single path
-#complexity = 1 : all walls are breaked
-#complexity = 2 : 1/2 walls are breaked
-#complexity = 3 : 1/3 walls are breaked
-#...
 func create_maze(side : int, complexity : int) -> void:
-	side = abs(side) + (abs(side)+1)%2
-	if side < 3:
-		side = 3
-	complexity = abs(complexity)
+	show_waiting_screen()
+	await sleep(.1)
 	var maze_grid : Array = []
 	var walls_position : Array = []
 	#region Initialize maze grid
@@ -446,7 +526,8 @@ func create_maze(side : int, complexity : int) -> void:
 	maze_grid[from_Vector3i_to_grid_position(Vector3i(side-1,side-2,side-2), side)] = 1
 	maze_grid = replace_all_in(maze_grid, final_value, 1)
 	#endregion Create Maze
-	draw_maze(maze_grid, side)
+	await draw_maze(maze_grid, side)
+	hide_waiting_screen()
 
 func from_Vector3i_to_grid_position(Vector : Vector3i, side : int) -> int:
 	return Vector.z * pow(side,2) + Vector.y * pow(side,1) + Vector.x * pow(side,0)
@@ -467,9 +548,52 @@ func replace_all_in(array : Array, replaced_value : float, new_value : float) ->
 	return array
 
 func draw_maze(maze_grid : Array, side : int) -> void:
+	for cube in maze.get_children():
+		cube.queue_free()
 	for z in side:
 		for y in side:
 			for x in side:
 				if maze_grid[from_Vector3i_to_grid_position(Vector3i(x,y,z), side)] == 0:
 					new_cube(Vector3(x,y,z))
+	await sleep()
+
+func show_waiting_screen() -> void:
+	waiting_screen.show()
+	waiting_screen.z_index = 3
+	waiting_screen.get_node("background").mesh.size = initial_window_size
+	waiting_screen.get_node("background").position = initial_window_size/2
+
+func hide_waiting_screen() -> void:
+	waiting_screen.hide()
+
+func sleep(delta : float = 0.01) -> void:
+	await get_tree().create_timer(delta).timeout
 #endregion utilities
+
+#region Buttons
+func change_position_visibility():
+	is_position_visible = !is_position_visible
+
+func new_game():
+	#maze_complexity is the random in the maze:
+		#maze_complexity = 0 : one single path
+		#maze_complexity = 1 : all walls are breaked
+		#maze_complexity = 2 : 1/2 walls are breaked
+		#maze_complexity = 3 : 1/3 walls are breaked
+		#...
+	settings_menu_open = false
+	settings_menu.get_node("menu").hide()
+	maze_complexity = abs(settings_menu.get_node("menu/store_informations/maze_complexity").text.to_int())
+	maze_size = abs(settings_menu.get_node("menu/store_informations/maze_side").text.to_int())
+	
+	maze_size = abs(maze_size) + (abs(maze_size)+1)%2
+	if maze_size < 5:
+		maze_size = 5
+	
+	player.position = Vector3(1,1,1)
+	create_maze(maze_size,maze_complexity)
+
+func open_close_settings():
+	settings_menu_open = !settings_menu_open
+	settings_menu.get_node("menu").visible = settings_menu_open
+#endregion

@@ -1,16 +1,28 @@
-[gd_scene load_steps=4 format=3 uid="uid://wop1epi83rku"]
+[gd_scene load_steps=10 format=3 uid="uid://wop1epi83rku"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_rwuwp"]
+[ext_resource type="Texture2D" uid="uid://col4ub1p3qc6g" path="res://assets/setting.svg" id="2_62xjn"]
 [ext_resource type="PackedScene" uid="uid://bcy1m5mku5pcs" path="res://scenes/player.tscn" id="2_ok3j6"]
 
 [sub_resource type="SystemFont" id="SystemFont_gyhpv"]
 font_names = PackedStringArray("BN Machine", "Year supply of fairy cakes", "Ethnocentric")
 
+[sub_resource type="Theme" id="Theme_ic6k6"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_dq5i4"]
+size = Vector2(300, 300)
+
+[sub_resource type="QuadMesh" id="QuadMesh_rsyul"]
+size = Vector2(200, 200)
+
+[sub_resource type="QuadMesh" id="QuadMesh_813lp"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_jdbvb"]
+
 [node name="main" type="Node"]
 script = ExtResource("1_rwuwp")
 mouse_sensibility = 0.003
 player_speed = 5.0
-maze_size = 17
 right_cube_color = Color(0.177496, 0.74869, 0, 1)
 left_cube_color = Color(0.176471, 0.74902, 0, 1)
 front_cube_color = Color(0, 0, 1, 1)
@@ -21,7 +33,7 @@ disabled_font_alpha = 0.75
 font_selected_color = Color(0, 1, 1, 1)
 selection_color = Color(0, 0, 0.776471, 1)
 font_outline_color = Color(1, 1, 0, 1)
-font_outline_size = 5
+font_outline_size = 3
 GUI_bg_color = Color(0, 1, 1, 1)
 GUI_outline_color = Color(0.813927, 0.813927, 0, 1)
 GUI_disabled_alpha = 0.75
@@ -31,6 +43,200 @@ GUI_corner_radius = Vector4i(15, 5, 5, 10)
 [node name="GUI" type="Node2D" parent="."]
 
 [node name="menus" type="Node2D" parent="GUI"]
+z_index = 1
+
+[node name="settings" type="Node2D" parent="GUI/menus"]
+
+[node name="open" type="Button" parent="GUI/menus/settings"]
+offset_left = 21.0
+offset_top = 545.0
+offset_right = 82.0
+offset_bottom = 606.0
+scale = Vector2(1.5, 1.5)
+theme = SubResource("Theme_ic6k6")
+icon = ExtResource("2_62xjn")
+flat = true
+
+[node name="menu" type="Node2D" parent="GUI/menus/settings"]
+position = Vector2(576, 324)
+scale = Vector2(1.5, 1.5)
+
+[node name="texts" type="Node2D" parent="GUI/menus/settings/menu"]
+position = Vector2(0, 12)
+
+[node name="maze_side" type="Label" parent="GUI/menus/settings/menu/texts"]
+z_index = 1
+offset_left = -39.0
+offset_top = -123.0
+offset_right = 39.0
+offset_bottom = -100.0
+text = "maze side"
+
+[node name="maze_complexity" type="Label" parent="GUI/menus/settings/menu/texts"]
+z_index = 1
+offset_left = -65.0
+offset_top = -41.0
+offset_right = 66.0
+offset_bottom = -18.0
+text = "maze complexity"
+
+[node name="store_informations" type="Node2D" parent="GUI/menus/settings/menu"]
+position = Vector2(0, 12)
+
+[node name="maze_side" type="LineEdit" parent="GUI/menus/settings/menu/store_informations"]
+z_index = 1
+offset_left = -97.0
+offset_top = -90.0
+offset_right = 98.0
+offset_bottom = -59.0
+text = "9"
+
+[node name="maze_complexity" type="LineEdit" parent="GUI/menus/settings/menu/store_informations"]
+z_index = 1
+offset_left = -97.0
+offset_top = -10.0
+offset_right = 98.0
+offset_bottom = 21.0
+text = "0"
+
+[node name="backgroound" type="MeshInstance2D" parent="GUI/menus/settings/menu"]
+self_modulate = Color(0, 0, 0, 1)
+scale = Vector2(1, 0.826667)
+mesh = SubResource("QuadMesh_dq5i4")
+
+[node name="new_maze" type="Button" parent="GUI/menus/settings/menu"]
+offset_left = -132.0
+offset_top = 57.0
+offset_right = 44.0
+offset_bottom = 88.0
+scale = Vector2(1.5, 1.5)
+text = "Generate a new maze"
+
+[node name="position_preview" type="Node2D" parent="GUI"]
+
+[node name="is_position_visible" type="CheckButton" parent="GUI/position_preview"]
+offset_left = 12.0
+offset_top = 29.0
+offset_right = 168.0
+offset_bottom = 128.0
+scale = Vector2(1.5, 1.5)
+text = "show position"
+
+[node name="plans" type="Node2D" parent="GUI/position_preview"]
+position = Vector2(293.98, 57.305)
+
+[node name="XY" type="MeshInstance2D" parent="GUI/position_preview/plans"]
+position = Vector2(100, 100)
+mesh = SubResource("QuadMesh_rsyul")
+
+[node name="X" type="Label" parent="GUI/position_preview/plans/XY"]
+offset_left = -9.0
+offset_top = -150.0
+offset_right = 1.0
+offset_bottom = -127.0
+scale = Vector2(2, 2)
+text = "X"
+
+[node name="Y" type="Label" parent="GUI/position_preview/plans/XY"]
+offset_left = -134.0
+offset_top = -15.0
+offset_right = -124.0
+offset_bottom = 8.0
+scale = Vector2(2, 2)
+text = "Y"
+
+[node name="0" type="Label" parent="GUI/position_preview/plans/XY"]
+offset_left = -119.0
+offset_top = 87.0
+offset_right = -109.0
+offset_bottom = 110.0
+scale = Vector2(2, 2)
+text = "0"
+
+[node name="player" type="MeshInstance2D" parent="GUI/position_preview/plans/XY"]
+modulate = Color(1, 0, 0, 1)
+scale = Vector2(10, 10)
+mesh = SubResource("QuadMesh_813lp")
+
+[node name="XZ" type="MeshInstance2D" parent="GUI/position_preview/plans"]
+position = Vector2(400, 100)
+mesh = SubResource("QuadMesh_rsyul")
+
+[node name="X" type="Label" parent="GUI/position_preview/plans/XZ"]
+offset_left = -9.0
+offset_top = -150.0
+offset_right = 1.0
+offset_bottom = -127.0
+scale = Vector2(2, 2)
+text = "X"
+
+[node name="Z" type="Label" parent="GUI/position_preview/plans/XZ"]
+offset_left = -134.0
+offset_top = -15.0
+offset_right = -124.0
+offset_bottom = 8.0
+scale = Vector2(2, 2)
+text = "Z"
+
+[node name="0" type="Label" parent="GUI/position_preview/plans/XZ"]
+offset_left = -119.0
+offset_top = 87.0
+offset_right = -109.0
+offset_bottom = 110.0
+scale = Vector2(2, 2)
+text = "0"
+
+[node name="player" type="MeshInstance2D" parent="GUI/position_preview/plans/XZ"]
+modulate = Color(1, 0, 0, 1)
+scale = Vector2(10, 10)
+mesh = SubResource("QuadMesh_813lp")
+
+[node name="YZ" type="MeshInstance2D" parent="GUI/position_preview/plans"]
+position = Vector2(700, 100)
+mesh = SubResource("QuadMesh_rsyul")
+
+[node name="Y" type="Label" parent="GUI/position_preview/plans/YZ"]
+offset_left = -9.0
+offset_top = -150.0
+offset_right = 1.0
+offset_bottom = -127.0
+scale = Vector2(2, 2)
+text = "Y"
+
+[node name="Z" type="Label" parent="GUI/position_preview/plans/YZ"]
+offset_left = -134.0
+offset_top = -15.0
+offset_right = -124.0
+offset_bottom = 8.0
+scale = Vector2(2, 2)
+text = "Z"
+
+[node name="0" type="Label" parent="GUI/position_preview/plans/YZ"]
+offset_left = -119.0
+offset_top = 87.0
+offset_right = -109.0
+offset_bottom = 110.0
+scale = Vector2(2, 2)
+text = "0"
+
+[node name="player" type="MeshInstance2D" parent="GUI/position_preview/plans/YZ"]
+modulate = Color(1, 0, 0, 1)
+scale = Vector2(10, 10)
+mesh = SubResource("QuadMesh_813lp")
+
+[node name="waiting_screen" type="Node2D" parent="GUI"]
+
+[node name="background" type="MeshInstance2D" parent="GUI/waiting_screen"]
+self_modulate = Color(0, 0, 0, 1)
+mesh = SubResource("QuadMesh_jdbvb")
+
+[node name="Label" type="Label" parent="GUI/waiting_screen/background"]
+offset_left = -242.0
+offset_top = -49.0
+scale = Vector2(2, 2)
+text = "Please wait,
+this may take a few moments..."
+horizontal_alignment = 1
 
 [node name="world" type="Node3D" parent="."]
 
