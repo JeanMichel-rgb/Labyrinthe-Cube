@@ -1,6 +1,23 @@
 extends Node
 
 #region Variables
+#region Player
+@export_category("Player")
+@export var mouse_sensibility : float
+@export var player_speed : float
+#endregion Player
+
+#region maze
+@export_category("Maze")
+@export var maze_size : int
+@export var top_cube_color : Color
+@export var down_cube_color : Color
+@export var right_cube_color : Color
+@export var left_cube_color : Color
+@export var front_cube_color : Color
+@export var behind_cube_color : Color
+#endregion
+
 #region GUI
 @export_category("Text")
 @export var font : Font
@@ -29,6 +46,9 @@ extends Node
 #region NodesID
 @onready var GUI : Node2D = get_node("GUI")
 @onready var menus : Node2D = get_node("GUI/menus")
+@onready var world : Node3D = get_node("world")
+@onready var maze : Node3D = world.get_node("maze")
+@onready var player : CharacterBody3D = world.get_node("player")
 #endregion NodesID
 
 #region Window
@@ -43,7 +63,8 @@ var global_mouse_position : Vector2 = Vector2.ZERO
 #endregion Variables
 
 func _ready() -> void:
-	pass
+	create_maze(maze_size,0)
+	player.position = Vector3(1,1,1)
 
 func _process(delta: float) -> void:
 	update()
@@ -56,6 +77,8 @@ func update() -> void:
 
 func update_variables():
 	global_mouse_position = GUI.get_global_mouse_position()
+	player.mouse_sensibility = mouse_sensibility
+	player.SPEED = player_speed
 
 func update_screen_size() -> void:
 	window.size.y = window.size.x * window_ratio
@@ -291,4 +314,162 @@ func is_in_rectangle(position : Vector2, rectangle_UpLeft_position : Vector2, re
 		(position.x >= 0 and position.y >= 0) and
 		(position.x <= rectangle_diagonal.x and position.y <= rectangle_diagonal.y)
 	)
-#endregion endregion
+
+func new_cube(position : Vector3, scale : Vector3 = Vector3(1,1,1), rotation : Vector3 = Vector3.ZERO) -> void:
+	var cube_node : Node3D = Node3D.new()
+	
+	cube_node.position = position
+	cube_node.scale = scale
+	cube_node.rotation = rotation
+	
+	#region Cube Mesh
+	var cube_mesh : Node3D = Node3D.new()
+	cube_node.add_child(cube_mesh)
+	var cube_mesh_top : MeshInstance3D = MeshInstance3D.new()
+	cube_mesh_top.mesh = QuadMesh.new()
+	var cube_mesh_down : MeshInstance3D = cube_mesh_top.duplicate()
+	var cube_mesh_left : MeshInstance3D = cube_mesh_top.duplicate()
+	var cube_mesh_right : MeshInstance3D = cube_mesh_top.duplicate()
+	var cube_mesh_front : MeshInstance3D = cube_mesh_top.duplicate()
+	var cube_mesh_behind : MeshInstance3D = cube_mesh_top.duplicate()
+	
+	cube_mesh.add_child(cube_mesh_top)
+	cube_mesh.add_child(cube_mesh_down)
+	cube_mesh.add_child(cube_mesh_left)
+	cube_mesh.add_child(cube_mesh_right)
+	cube_mesh.add_child(cube_mesh_front)
+	cube_mesh.add_child(cube_mesh_behind)
+	#endregion Cube Mesh
+	
+	#region Mesh's position
+	cube_mesh_top.position.y += .5
+	cube_mesh_top.rotation.x = -PI/2
+	cube_mesh_down.position.y -= .5
+	cube_mesh_down.rotation.x = PI/2
+	cube_mesh_left.position.x -= .5
+	cube_mesh_left.rotation.y -= PI/2
+	cube_mesh_right.position.x += .5
+	cube_mesh_right.rotation.y += PI/2
+	cube_mesh_front.position.z += .5
+	cube_mesh_behind.position.z -= .5
+	cube_mesh_behind.scale.z = -1
+	#endregion Mesh's position
+	
+	#region Color
+	var top_color : StandardMaterial3D = StandardMaterial3D.new()
+	top_color.albedo_color = top_cube_color
+	top_color.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	
+	var down_color : StandardMaterial3D = top_color.duplicate()
+	down_color.albedo_color = down_cube_color
+	
+	var left_color : StandardMaterial3D = top_color.duplicate()
+	left_color.albedo_color = left_cube_color
+	
+	var right_color : StandardMaterial3D = top_color.duplicate()
+	right_color.albedo_color = right_cube_color
+	
+	var front_color : StandardMaterial3D = top_color.duplicate()
+	front_color.albedo_color = front_cube_color
+	
+	var behind_color : StandardMaterial3D = top_color.duplicate()
+	behind_color.albedo_color = behind_cube_color
+	
+	cube_mesh_top.set_surface_override_material(0, top_color)
+	cube_mesh_down.set_surface_override_material(0, down_color)
+	cube_mesh_left.set_surface_override_material(0, left_color)
+	cube_mesh_right.set_surface_override_material(0, right_color)
+	cube_mesh_front.set_surface_override_material(0, front_color)
+	cube_mesh_behind.set_surface_override_material(0, behind_color)
+	#endregion Color
+	
+	#region StaticBody
+	var StaticBody : StaticBody3D = StaticBody3D.new()
+	var CollisionShape : CollisionShape3D = CollisionShape3D.new()
+	CollisionShape.shape = BoxShape3D.new()
+	StaticBody.add_child(CollisionShape)
+	cube_node.add_child(StaticBody)
+	#endregion StaticBody
+	
+	maze.add_child(cube_node)
+
+
+#complexity is the random in the maze:
+#complexity = 0 : one single path
+#complexity = 1 : all walls are breaked
+#complexity = 2 : 1/2 walls are breaked
+#complexity = 3 : 1/3 walls are breaked
+#...
+func create_maze(side : int, complexity : int) -> void:
+	side = abs(side) + (abs(side)+1)%2
+	if side < 3:
+		side = 3
+	complexity = abs(complexity)
+	var maze_grid : Array = []
+	var walls_position : Array = []
+	#region Initialize maze grid
+	var value = 0
+	for z in side:
+		for y in side:
+			for x in side:
+				if z % 2 == 0 or y % 2 == 0 or x % 2 == 0:
+					maze_grid.append(0)
+					if is_x_wall(Vector3i(x,y,z),side) or is_y_wall(Vector3i(x,y,z),side) or is_z_wall(Vector3i(x,y,z),side):
+						walls_position.append(Vector3i(x,y,z))
+				else : 
+					value += 1
+					maze_grid.append(value)
+	#endregion Initialize maze grid
+	#region Create Maze
+	var final_value : int
+	for i in walls_position.size():
+		var wall_position : Vector3i = walls_position.pick_random()
+		walls_position.remove_at(walls_position.find(wall_position))
+		var front : float
+		var behind : float
+		if is_x_wall(wall_position, side):
+			front = maze_grid[from_Vector3i_to_grid_position(wall_position+Vector3i(1,0,0), side)]
+			behind = maze_grid[from_Vector3i_to_grid_position(wall_position-Vector3i(1,0,0), side)]
+		if is_y_wall(wall_position, side):
+			front = maze_grid[from_Vector3i_to_grid_position(wall_position+Vector3i(0,1,0), side)]
+			behind = maze_grid[from_Vector3i_to_grid_position(wall_position-Vector3i(0,1,0), side)]
+		if is_z_wall(wall_position, side):
+			front = maze_grid[from_Vector3i_to_grid_position(wall_position+Vector3i(0,0,1), side)]
+			behind = maze_grid[from_Vector3i_to_grid_position(wall_position-Vector3i(0,0,1), side)]
+		
+		var wall_grid_position = from_Vector3i_to_grid_position(wall_position, side)
+		if front != null and behind != null:
+			if front != behind or (randi_range(1,complexity) == 1 and complexity >= 1):
+				maze_grid[wall_grid_position] = front
+				maze_grid = replace_all_in(maze_grid, behind, front)
+				final_value = front
+	maze_grid[from_Vector3i_to_grid_position(Vector3i(side-1,side-2,side-2), side)] = 1
+	maze_grid = replace_all_in(maze_grid, final_value, 1)
+	#endregion Create Maze
+	draw_maze(maze_grid, side)
+
+func from_Vector3i_to_grid_position(Vector : Vector3i, side : int) -> int:
+	return Vector.z * pow(side,2) + Vector.y * pow(side,1) + Vector.x * pow(side,0)
+
+func is_x_wall(position : Vector3i, side : int) -> bool:
+	return position.x != 0 and position.x != side-1 and position.x % 2 == 0 and position.y % 2 == 1 and position.z % 2 == 1
+
+func is_y_wall(position : Vector3i, side : int) -> bool:
+	return position.x % 2 == 1 and position.y != 0 and position.y != side-1 and position.y % 2 == 0 and position.z % 2 == 1
+
+func is_z_wall(position : Vector3i, side : int) -> bool:
+	return position.x % 2 == 1 and position.y % 2 == 1 and position.z != 0 and position.z != side-1 and position.z % 2 == 0
+
+func replace_all_in(array : Array, replaced_value : float, new_value : float) -> Array:
+	for i in array.size():
+		if array[i] == replaced_value:
+			array[i] = new_value
+	return array
+
+func draw_maze(maze_grid : Array, side : int) -> void:
+	for z in side:
+		for y in side:
+			for x in side:
+				if maze_grid[from_Vector3i_to_grid_position(Vector3i(x,y,z), side)] == 0:
+					new_cube(Vector3(x,y,z))
+#endregion utilities

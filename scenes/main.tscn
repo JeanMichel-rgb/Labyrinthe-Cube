@@ -1,12 +1,20 @@
-[gd_scene load_steps=3 format=3 uid="uid://wop1epi83rku"]
+[gd_scene load_steps=4 format=3 uid="uid://wop1epi83rku"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_rwuwp"]
+[ext_resource type="PackedScene" uid="uid://bcy1m5mku5pcs" path="res://scenes/player.tscn" id="2_ok3j6"]
 
 [sub_resource type="SystemFont" id="SystemFont_gyhpv"]
 font_names = PackedStringArray("BN Machine", "Year supply of fairy cakes", "Ethnocentric")
 
 [node name="main" type="Node"]
 script = ExtResource("1_rwuwp")
+mouse_sensibility = 0.003
+player_speed = 5.0
+maze_size = 17
+right_cube_color = Color(0.177496, 0.74869, 0, 1)
+left_cube_color = Color(0.176471, 0.74902, 0, 1)
+front_cube_color = Color(0, 0, 1, 1)
+behind_cube_color = Color(0, 0, 1, 1)
 font = SubResource("SystemFont_gyhpv")
 font_color = Color(0, 0.356863, 1, 1)
 disabled_font_alpha = 0.75
@@ -25,3 +33,7 @@ GUI_corner_radius = Vector4i(15, 5, 5, 10)
 [node name="menus" type="Node2D" parent="GUI"]
 
 [node name="world" type="Node3D" parent="."]
+
+[node name="maze" type="Node3D" parent="world"]
+
+[node name="player" parent="world" instance=ExtResource("2_ok3j6")]
