@@ -238,6 +238,31 @@ text = "Please wait,
 this may take a few moments..."
 horizontal_alignment = 1
 
+[node name="time" type="Node2D" parent="GUI"]
+
+[node name="game_time" type="Label" parent="GUI/time"]
+offset_left = 855.0
+offset_top = 563.0
+offset_right = 1052.0
+offset_bottom = 619.0
+scale = Vector2(1.5, 1.5)
+text = "game's time : "
+vertical_alignment = 1
+autowrap_mode = 3
+clip_text = true
+
+[node name="previous_game_time" type="Label" parent="GUI/time"]
+offset_left = 300.0
+offset_top = 563.0
+offset_right = 526.0
+offset_bottom = 619.0
+scale = Vector2(1.5, 1.5)
+text = "previous game's time : "
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+clip_text = true
+
 [node name="world" type="Node3D" parent="."]
 
 [node name="maze" type="Node3D" parent="world"]

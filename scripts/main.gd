@@ -68,6 +68,8 @@ var global_mouse_position : Vector2 = Vector2.ZERO
 var player_position : Vector3i = Vector3i.ZERO
 var is_position_visible : bool = false
 var settings_menu_open : bool = false
+var game_time : float = 0
+var previous_game_time : float = 0
 #endregion miscellaneous
 #endregion Variables
 
@@ -82,10 +84,12 @@ func _ready() -> void:
 	settings_menu.get_node("menu").hide()
 
 func _process(delta: float) -> void:
-	await update()
-	await vizualize_player_position()
+	game_time += delta
+	update()
+	vizualize_player_position()
+	#win
 	if is_player_outside():
-		player.position = Vector3(1,1,1)
+		previous_game_time = game_time
 		new_game()
 
 #region Update
@@ -116,6 +120,12 @@ func update_screen_size() -> void:
 	window.size.y = window.size.x * window_ratio
 
 func update_GUI() -> void:
+	#region Timers
+	var round_to_decimal : int = 3
+	GUI.get_node("time/game_time").text = "game's time : "+str(round(game_time*pow(10,round_to_decimal))/pow(10,round_to_decimal))
+	GUI.get_node("time/previous_game_time").text = "previous game's time : "+str(round(previous_game_time*pow(10,round_to_decimal))/pow(10,round_to_decimal))
+	#endregion Timers
+	
 	#region GUI's scale
 	var ratio : float = float(window.size.x)/float(initial_window_size.x)
 	GUI.scale = Vector2(1,1) * ratio
@@ -126,6 +136,7 @@ func update_GUI() -> void:
 	var buttons : Array = [
 		settings_menu.get_node("menu/new_maze"),
 	]
+	#store here all Flat Button's ID
 	var flat_buttons : Array = [
 		settings_menu.get_node("open"),
 	]
@@ -168,6 +179,9 @@ func update_GUI() -> void:
 		
 		settings_menu.get_node("menu/texts/maze_side"),
 		settings_menu.get_node("menu/texts/maze_complexity"),
+		
+		GUI.get_node("time/game_time"),
+		GUI.get_node("time/previous_game_time"),
 	]
 	#endregion Store node's ID
 	
@@ -290,6 +304,7 @@ func update_GUI() -> void:
 	#endregion Background
 	#endregion Create control node's theme
 	
+	#region Create flat button's theme
 	var flat_button_theme : Theme = Theme.new()
 	
 	#region Text
@@ -318,6 +333,7 @@ func update_GUI() -> void:
 	flat_button_theme.set_stylebox("pressed", "Button", _StyleBoxFlat)
 	#endregion Add StyleBoxFlat to flat_button_theme
 	#endregion Background
+	#endregion Create flat button's theme
 	
 	#region Add theme
 	for button in buttons:
@@ -362,6 +378,7 @@ func update_GUI() -> void:
 	#region Add label settings
 	for label in labels:
 		label.label_settings = label_settings
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	#endregion Add label settings
 	#endregion Labels
 	
@@ -589,6 +606,8 @@ func new_game():
 	maze_size = abs(maze_size) + (abs(maze_size)+1)%2
 	if maze_size < 5:
 		maze_size = 5
+	
+	game_time = 0
 	
 	player.position = Vector3(1,1,1)
 	create_maze(maze_size,maze_complexity)
